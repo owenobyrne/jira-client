@@ -23,6 +23,8 @@ import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.RestClient;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -122,19 +124,47 @@ public class RapidView extends GreenHopperResource {
             restclient
         );
     }
-
+    
     /**
-     * Retrieves all sprints associated with this rapid view.
+     * Retrieves all sprints associated with this rapid view, not including historic or future sprints
      *
      * @return a list of sprints
      *
      * @throws JiraException when the retrieval fails
      */
     public List<Sprint> getSprints() throws JiraException {
+    	return getSprints(null);
+    }
+    
+    /**
+     * Retrieves all sprints associated with this rapid view.
+     *
+     * @param options a HashMap of options to provide to the query. 
+     *                includeHistoricSprints - Boolean = return sprints previously assigned to the board.
+     *                includeFutureSprints - Boolean - return future sprints too.
+     *                Both default to false. 
+     *
+     * @return a list of sprints
+     *
+     * @throws JiraException when the retrieval fails
+     */
+    public List<Sprint> getSprints(final HashMap<String, Boolean> options) throws JiraException {
         JSON result = null;
 
         try {
-            result = restclient.get(RESOURCE_URI + "sprintquery/" + id);
+        	
+        	URI uri = restclient.buildURI(
+    			RESOURCE_URI + "sprintquery/" + id,
+                new HashMap<String, String>() {{
+                	put("includeHistoricSprints", 
+                			Boolean.toString(options.get("includeHistoricSprints") != null ? options.get("includeHistoricSprints") : Boolean.FALSE));
+                	put("includeFutureSprints", 
+                			Boolean.toString(options.get("includeFutureSprints") != null ? options.get("includeFutureSprints") : Boolean.FALSE));
+                }});
+        	
+            result = restclient.get(uri);
+
+            
         } catch (Exception ex) {
             throw new JiraException("Failed to retrieve sprints", ex);
         }
